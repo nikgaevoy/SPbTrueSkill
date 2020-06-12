@@ -132,7 +132,7 @@ fn inference(rating: &mut Rating, contest: &Contest) {
             m_in_t[k][j] = get_team_performance(&m_in_p[k][j]);
             m_in_u[k][j] = Message { mu: 0., sigma: m_in_t[k][j].sigma };
             m_out_u[k][j] = m_in_u[k][j].leq_eps(EPS);
-            m_out_t[k][j] = &m_out_u[k][j] + &m_in_t[k][j]; // differs from the article
+            m_out_t[k][j] = &m_out_u[k][j] + &m_in_t[k][j]; // seems to be a bug in the article
         }
 
         assert!(!m_out_t[k].is_empty());

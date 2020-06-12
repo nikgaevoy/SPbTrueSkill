@@ -331,10 +331,10 @@ impl Gaussian {
         let mu = self.mu + self.sigma
             * (normal_exp(self, -eps) + normal_exp(self, eps))
             / (alpha * (2. * PI).sqrt());
-        let sigma = self.mu.powi(2) + self.sigma.powi(2) - self.sigma
+        let sigma = (self.mu.powi(2) + self.sigma.powi(2) - self.sigma
             * ((eps + self.mu) * normal_exp(self, -eps) + (eps - self.mu) * normal_exp(self, eps))
             / (alpha * (2. * PI).sqrt())
-            - mu.powi(2);
+            - mu.powi(2)).abs().sqrt();
 
 
         Gaussian { mu, sigma } / self
@@ -346,10 +346,10 @@ impl Gaussian {
         let mu = self.mu + self.sigma
             * normal_exp(self, -eps)
             / (alpha * (2. * PI).sqrt());
-        let sigma = self.mu.powi(2) + self.sigma.powi(2) - self.sigma
+        let sigma = (self.mu.powi(2) + self.sigma.powi(2) - self.sigma
             * ((eps + self.mu) * normal_exp(self, -eps))
             / (alpha * (2. * PI).sqrt())
-            - mu.powi(2);
+            - mu.powi(2)).abs().sqrt();
 
 
         Gaussian { mu, sigma } / self
