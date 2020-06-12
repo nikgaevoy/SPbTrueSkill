@@ -110,14 +110,14 @@ fn inference(rating: &mut Rating, contest: &Contest) {
     let mut m_in_u = gen_team_message(contest, &default_message);
     let mut m_out_u = gen_team_message(contest, &default_message);
     let mut m_out_t = gen_team_message(contest, &default_message);
-    let mut m_in_l = vec![default_message.clone(); rating.len()];
-    let mut m_out_l = vec![default_message.clone(); rating.len()];
-    let mut m_l2d_l = vec![default_message.clone(); rating.len() - 1];
-    let mut m_l2d_r = vec![default_message.clone(); rating.len() - 1];
-    let mut m_in_d = vec![default_message.clone(); rating.len() - 1];
-    let mut m_out_d = vec![default_message.clone(); rating.len() - 1];
-    let mut m_d2l_l = vec![default_message.clone(); rating.len() - 1];
-    let mut m_d2l_r = vec![default_message.clone(); rating.len() - 1];
+    let mut m_in_l = vec![default_message.clone(); contest.len()];
+    let mut m_out_l = vec![default_message.clone(); contest.len()];
+    let mut m_l2d_l = vec![default_message.clone(); contest.len() - 1];
+    let mut m_l2d_r = vec![default_message.clone(); contest.len() - 1];
+    let mut m_in_d = vec![default_message.clone(); contest.len() - 1];
+    let mut m_out_d = vec![default_message.clone(); contest.len() - 1];
+    let mut m_d2l_l = vec![default_message.clone(); contest.len() - 1];
+    let mut m_d2l_r = vec![default_message.clone(); contest.len() - 1];
     let mut m_l2u = gen_team_message(contest, &default_message);
     let mut m_u2l = gen_team_message(contest, &default_message);
 
@@ -164,9 +164,9 @@ fn inference(rating: &mut Rating, contest: &Contest) {
                 if k == 0 {
                     m_l2u[k][j] = m_d2l_l[k].clone();
                 } else if k == m_l2u.len() - 1 {
-                    m_l2u[k][j] = m_d2l_r[k].clone();
+                    m_l2u[k][j] = m_d2l_r[k - 1].clone();
                 } else {
-                    m_l2u[k][j] = &m_d2l_l[k] * &m_d2l_r[k];
+                    m_l2u[k][j] = &m_d2l_l[k] * &m_d2l_r[k - 1];
                 }
 
                 for i in 0..m_l2u[k].len() {
