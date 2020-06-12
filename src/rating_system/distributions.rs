@@ -61,7 +61,7 @@ impl ops::Sub<Gaussian> for Gaussian {
 
     fn sub(self, to: Gaussian) -> Gaussian {
         Gaussian {
-            mu: self.mu + to.mu,
+            mu: self.mu - to.mu,
             sigma: (self.sigma.powi(2) + to.sigma.powi(2)).sqrt(),
         }
     }
@@ -73,7 +73,7 @@ impl<'a> ops::Sub<Gaussian> for &'a Gaussian {
 
     fn sub(self, to: Gaussian) -> Gaussian {
         Gaussian {
-            mu: self.mu + to.mu,
+            mu: self.mu - to.mu,
             sigma: (self.sigma.powi(2) + to.sigma.powi(2)).sqrt(),
         }
     }
@@ -85,7 +85,7 @@ impl<'b> ops::Sub<&'b Gaussian> for Gaussian {
 
     fn sub(self, to: &'b Gaussian) -> Gaussian {
         Gaussian {
-            mu: self.mu + to.mu,
+            mu: self.mu - to.mu,
             sigma: (self.sigma.powi(2) + to.sigma.powi(2)).sqrt(),
         }
     }
@@ -97,7 +97,7 @@ impl<'a, 'b> ops::Sub<&'b Gaussian> for &'a Gaussian {
 
     fn sub(self, to: &'b Gaussian) -> Gaussian {
         Gaussian {
-            mu: self.mu + to.mu,
+            mu: self.mu - to.mu,
             sigma: (self.sigma.powi(2) + to.sigma.powi(2)).sqrt(),
         }
     }
@@ -160,7 +160,7 @@ impl<'b> ops::Mul<&'b f64> for Gaussian {
 
     fn mul(self, to: &'b f64) -> Gaussian {
         Gaussian {
-            mu: self.mu * to,
+            mu: self.mu * *to,
             sigma: self.sigma * to.abs(),
         }
     }

@@ -13,6 +13,6 @@ fn main() {
     simulate_contest(&mut rating, &contest);
 
     for (key, value) in &rating {
-        println!("{}:\t{}", key, value.mu);
+        println!("{}:\t{}\t{}", key, value.mu, value.sigma);
     }
 }

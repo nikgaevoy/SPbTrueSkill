@@ -97,13 +97,12 @@ fn propagate_results(rating: &mut Rating, contest: &Contest, m_in_t_prime: &Vec<
 }
 
 
-#[allow(dead_code, unused_variables)]
 fn inference(rating: &mut Rating, contest: &Contest) {
     assert!(!contest.is_empty());
 
     let default_message = Message { mu: 0., sigma: SIGMA };
 
-    // Could be optimized, written in that way for simplicity
+    // could be optimized, written that way for simplicity
     let mut m_in_s = gen_player_message(contest, &default_message);
     let mut m_in_p = gen_player_message(contest, &default_message);
     let mut m_in_t = gen_team_message(contest, &default_message);
@@ -127,13 +126,13 @@ fn inference(rating: &mut Rating, contest: &Contest) {
         for j in 0..contest[k].len() {
             for i in 0..contest[k][j].len() {
                 m_in_s[k][j][i] = rating.get(&contest[k][j][i]).unwrap().clone();
-                m_in_p[k][j][i] = rating.get(&contest[k][j][i]).unwrap().clone();
+                m_in_p[k][j][i] = &m_in_s[k][j][i] + Gaussian { mu: 0., sigma: BETA };
             }
 
             m_in_t[k][j] = get_team_performance(&m_in_p[k][j]);
             m_in_u[k][j] = Message { mu: 0., sigma: m_in_t[k][j].sigma };
             m_out_u[k][j] = m_in_u[k][j].leq_eps(EPS);
-            m_out_t[k][j] = &m_out_u[k][j] * &m_in_t[k][j];
+            m_out_t[k][j] = &m_out_u[k][j] + &m_in_t[k][j]; // differs from the article
         }
 
         assert!(!m_out_t[k].is_empty());
@@ -152,7 +151,7 @@ fn inference(rating: &mut Rating, contest: &Contest) {
         m_l2d_r[k] = m_in_l[k + 1].clone();
     }
 
-    for rep in 0..10 {
+    for _rep in 0..10 {
         for k in 0..m_l2d_l.len() {
             m_in_d[k] = &m_in_l[k] - &m_in_l[k + 1];
             m_out_d[k] = m_in_d[k].greater_eps(2. * EPS);
@@ -175,7 +174,7 @@ fn inference(rating: &mut Rating, contest: &Contest) {
                     }
                 }
 
-                m_in_u[k][j] = &m_in_l[k] - &m_in_t[k][j];
+                m_in_u[k][j] = &m_in_l[k] - &m_out_t[k][j];
                 m_out_u[k][j] = m_in_u[k][j].leq_eps(EPS);
                 m_u2l[k][j] = &m_out_t[k][j] - &m_out_u[k][j];
             }
