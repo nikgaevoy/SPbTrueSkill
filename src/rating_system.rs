@@ -12,6 +12,8 @@ const EPS: f64 = 0.736;
 const MU: f64 = 1500.;
 // default player sigma
 const SIGMA: f64 = MU / 3.;
+// epsilon used for convergence loop
+const CONVERGENCE_EPS: f64 = 1e-5;
 
 pub type PlayerRating = Gaussian;
 type Message = Gaussian;
@@ -97,6 +99,28 @@ fn propagate_results(rating: &mut Rating, contest: &Contest, m_in_t_prime: &Vec<
 }
 
 
+fn check_convergence(a: &Vec<Vec<Message>>, b: &Vec<Vec<Message>>) -> f64 {
+    let mut diff = 0.;
+
+    if a.len() != b.len() {
+        return f64::MAX;
+    }
+
+    for i in 0..a.len() {
+        assert_eq!(a[i].len(), b[i].len());
+
+        for j in 0..a[i].len() {
+            let dmu = (a[i][j].mu - b[i][j].mu).abs();
+            let dsigma = (a[i][j].sigma - b[i][j].sigma).abs();
+
+            diff = f64::max(diff, f64::max(dmu, dsigma));
+        }
+    }
+
+    diff
+}
+
+
 fn inference(rating: &mut Rating, contest: &Contest) {
     assert!(!contest.is_empty());
 
@@ -151,7 +175,16 @@ fn inference(rating: &mut Rating, contest: &Contest) {
         m_l2d_r[k] = m_in_l[k + 1].clone();
     }
 
-    for _rep in 0..10 {
+    let mut tmp_m_l2u = Vec::new();
+    let mut tmp_m_out_u = Vec::new();
+    let mut rounds = 0;
+
+    while f64::max(check_convergence(&tmp_m_l2u, &m_l2u),
+                   check_convergence(&tmp_m_out_u, &m_out_u)) >= CONVERGENCE_EPS {
+        tmp_m_l2u = m_l2u.clone();
+        tmp_m_out_u = m_out_u.clone();
+        rounds += 1;
+
         for k in 0..m_l2d_l.len() {
             m_in_d[k] = &m_in_l[k] - &m_in_l[k + 1];
             m_out_d[k] = m_in_d[k].greater_eps(2. * EPS);
@@ -193,6 +226,8 @@ fn inference(rating: &mut Rating, contest: &Contest) {
         }
         *m_l2d_r.last_mut().unwrap() = m_out_l.last().unwrap().clone();
     }
+
+    eprintln!("rounds: {}", rounds);
 
     for k in 0..m_in_t.len() {
         for j in 0..m_in_t[k].len() {
