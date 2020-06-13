@@ -14,6 +14,8 @@ const MU: f64 = 1500.;
 const SIGMA: f64 = MU / 3.;
 // epsilon used for convergence loop
 const CONVERGENCE_EPS: f64 = 1e-5;
+// defines sigma growth per second
+const SIGMA_GROWTH: f64 = 1e-5;
 
 pub type PlayerRating = Gaussian;
 type Message = Gaussian;
@@ -22,6 +24,7 @@ pub type Team = Vec<Player>;
 pub type ContestPlace = Vec<Team>;
 pub type Contest = Vec<ContestPlace>;
 pub type Rating = HashMap<Player, PlayerRating>;
+pub type RatingHistory = HashMap<Player, Vec<(PlayerRating, usize)>>;
 
 impl Default for PlayerRating {
     fn default() -> PlayerRating {
@@ -32,11 +35,26 @@ impl Default for PlayerRating {
     }
 }
 
-fn update_rating(old: &Rating, new: &mut Rating, contest: &Contest) {
+fn load_rating(old: &RatingHistory, new: &mut Rating, contest: &Contest, when: usize) {
     for place in &contest[..] {
         for team in &place[..] {
             for player in &team[..] {
-                new.insert(player.to_string(), old.get(player).cloned().unwrap_or(PlayerRating::default()));
+                let curr = old.get(player).cloned().unwrap_or(vec![(PlayerRating::default(), when)]);
+                let mut add = curr.last().unwrap().clone();
+                assert!(add.1 <= when);
+                add.0.sigma = f64::min(SIGMA, add.0.sigma + (when - add.1) as f64 * SIGMA_GROWTH);
+                new.insert(player.to_string(), add.0);
+            }
+        }
+    }
+}
+
+
+fn update_rating(old: &Rating, new: &mut RatingHistory, contest: &Contest, when: usize) {
+    for place in &contest[..] {
+        for team in &place[..] {
+            for player in &team[..] {
+                new.entry(player.clone()).or_insert(Vec::new()).push((old.get(player).unwrap().clone(), when));
             }
         }
     }
@@ -227,7 +245,7 @@ fn inference(rating: &mut Rating, contest: &Contest) {
         *m_l2d_r.last_mut().unwrap() = m_out_l.last().unwrap().clone();
     }
 
-    eprintln!("rounds until convergence: {}", rounds);
+    eprintln!("Rounds until convergence: {}", rounds);
 
     for k in 0..m_in_t.len() {
         for j in 0..m_in_t[k].len() {
@@ -240,13 +258,13 @@ fn inference(rating: &mut Rating, contest: &Contest) {
 }
 
 
-pub fn simulate_contest(rating: &mut Rating, contest: &Contest) {
+pub fn simulate_contest(rating_history: &mut RatingHistory, contest: &Contest, when: usize) {
     let mut contest_rating = Rating::new();
-    update_rating(rating, &mut contest_rating, contest);
+    load_rating(rating_history, &mut contest_rating, contest, when);
 
     if contest.len() >= 2 {
         inference(&mut contest_rating, contest);
     }
 
-    update_rating(&contest_rating, rating, contest);
+    update_rating(&contest_rating, rating_history, contest, when);
 }

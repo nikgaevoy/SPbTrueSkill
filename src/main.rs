@@ -7,7 +7,7 @@ use read_codeforces::Contest as EbTechContest;
 use std::time;
 
 
-fn contest_adaptor(from: &EbTechContest) -> Contest {
+fn contest_adaptor(from: &EbTechContest) -> (Contest, usize) {
     let mut ans = Contest::new();
 
     for i in 1..from.standings.len() {
@@ -25,12 +25,12 @@ fn contest_adaptor(from: &EbTechContest) -> Contest {
         prev = *lo;
     }
 
-    ans
+    (ans, from.time_seconds)
 }
 
 
 fn main() {
-    let mut rating = rating_system::Rating::new();
+    let mut rating = rating_system::RatingHistory::new();
 
     let now = time::Instant::now();
 
@@ -42,16 +42,30 @@ fn main() {
             contest.id,
             contest.name
         );
-        simulate_contest(&mut rating, &contest_adaptor(&contest));
+        let adapted = contest_adaptor(&contest);
+        simulate_contest(&mut rating, &adapted.0, adapted.1);
     }
 
     use std::io::Write;
     let filename = "data/CFratings.txt";
     let file = std::fs::File::create(filename).expect("Output file not found");
     let mut out = std::io::BufWriter::new(file);
+    let mut to_sort = Vec::new();
 
     for (key, value) in &rating {
-        writeln!(out, "{}:\t{:4.2}\t{:4.2}", key, value.mu, value.sigma).ok();
+        to_sort.push((key.clone(), value.clone()));
+    }
+
+    to_sort.sort_by(|(_ak, av), (_bk, bv)|
+        av.last().unwrap().0.mu.partial_cmp(&bv.last().unwrap().0.mu).unwrap());
+    to_sort.reverse();
+
+    for (key, value) in to_sort {
+        write!(out, "{:30}", key).ok();
+        for (rating, _when) in &value[value.len() - 1..value.len()] {
+            write!(out, "\t({:.2}, {:.2})", rating.mu, rating.sigma).ok();
+        }
+        writeln!(out).ok();
     }
 
     println!("Finished in {:.2} seconds", now.elapsed().as_secs_f64());
