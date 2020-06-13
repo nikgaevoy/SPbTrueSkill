@@ -227,7 +227,7 @@ fn inference(rating: &mut Rating, contest: &Contest) {
         *m_l2d_r.last_mut().unwrap() = m_out_l.last().unwrap().clone();
     }
 
-    eprintln!("rounds: {}", rounds);
+    eprintln!("rounds until convergence: {}", rounds);
 
     for k in 0..m_in_t.len() {
         for j in 0..m_in_t[k].len() {
