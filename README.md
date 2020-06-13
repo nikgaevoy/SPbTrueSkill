@@ -1,4 +1,4 @@
-# TrueSkill from St.Petesburg
+# TrueSkill from St.Petersburg
 
 The rating system for team competitions, just like TrueSkill™, but better.
 
