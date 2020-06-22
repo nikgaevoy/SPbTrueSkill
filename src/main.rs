@@ -60,8 +60,10 @@ fn main() {
         av.last().unwrap().0.mu.partial_cmp(&bv.last().unwrap().0.mu).unwrap());
     to_sort.reverse();
 
+    let mut ord = 1;
     for (key, value) in to_sort {
-        write!(out, "{:30}", key).ok();
+        write!(out, "{}.\t{:30}", ord, key).ok();
+        ord += 1;
         for (rating, _when) in &value[value.len() - 1..value.len()] {
             write!(out, "\t({:.2}, {:.2})", rating.mu, rating.sigma).ok();
         }

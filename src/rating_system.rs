@@ -199,16 +199,20 @@ fn inference(rating: &mut Rating, contest: &Contest) {
 
     while f64::max(check_convergence(&tmp_m_l2u, &m_l2u),
                    check_convergence(&tmp_m_out_u, &m_out_u)) >= CONVERGENCE_EPS {
-        tmp_m_l2u = m_l2u.clone();
-        tmp_m_out_u = m_out_u.clone();
+        if rounds % 2 == 0 {
+            tmp_m_l2u = m_l2u.clone();
+            tmp_m_out_u = m_out_u.clone();
+        }
         rounds += 1;
 
         for k in 0..m_l2d_l.len() {
-            m_in_d[k] = &m_in_l[k] - &m_in_l[k + 1];
+            m_in_d[k] = &m_l2d_l[k] - &m_l2d_r[k];
             m_out_d[k] = m_in_d[k].greater_eps(2. * EPS);
+            let tmp = m_d2l_l[k].clone();
             m_d2l_l[k] = &m_out_d[k] + &m_l2d_r[k];
-            m_d2l_r[k] = &m_l2d_l[k] - &m_out_d[k];
+            m_d2l_r[k] = tmp - &m_out_d[k];
         }
+
         for k in 0..m_l2u.len() {
             for j in 0..m_l2u[k].len() {
                 if k == 0 {
@@ -239,8 +243,9 @@ fn inference(rating: &mut Rating, contest: &Contest) {
 
         m_l2d_l[0] = m_out_l[0].clone();
         for k in 1..m_l2d_l.len() {
+            let tmp = m_l2d_r[k - 1].clone();
             m_l2d_r[k - 1] = &m_out_l[k] * &m_d2l_l[k];
-            m_l2d_l[k] = &m_out_l[k] * &m_d2l_r[k - 1];
+            m_l2d_l[k] = &m_out_l[k] * tmp;
         }
         *m_l2d_r.last_mut().unwrap() = m_out_l.last().unwrap().clone();
     }
