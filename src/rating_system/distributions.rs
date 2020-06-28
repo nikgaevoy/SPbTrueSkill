@@ -5,6 +5,7 @@ use std::ops;
 
 use statrs::function::erf::erfc;
 use std::f64::consts::PI;
+use std::f64::INFINITY;
 
 const PREC: f64 = 1e-3;
 
@@ -13,6 +14,12 @@ pub struct Gaussian {
     pub mu: f64,
     pub sigma: f64,
 }
+
+#[allow(unused)]
+const ZERO: Gaussian = Gaussian { mu: 0., sigma: 0. };
+#[allow(unused)]
+const ONE: Gaussian = Gaussian { mu: 0., sigma: INFINITY };
+
 
 overload!((a: ?Gaussian) + (b: ?Gaussian) -> Gaussian {
     Gaussian {
@@ -36,6 +43,13 @@ overload!((a: ?Gaussian) - (b: ?Gaussian) -> Gaussian {
 overload!((a: &mut Gaussian) -= (b: ?Gaussian) {
     a.mu -= b.mu;
     a.sigma = (a.sigma.powi(2) + b.sigma.powi(2)).sqrt();
+});
+
+overload!(-(a: &mut Gaussian) -> Gaussian {
+    Gaussian {
+        mu: -a.mu,
+        sigma: a.sigma,
+    }
 });
 
 
@@ -65,6 +79,13 @@ overload!((a: &mut Gaussian) /= (b: ?f64) {
 
 
 overload!((a: ?Gaussian) * (b: ?Gaussian) -> Gaussian {
+    if a.sigma.is_infinite() {
+        return b.clone();
+    }
+    if b.sigma.is_infinite() {
+        return a.clone();
+    }
+
     let ssigma1 = a.sigma.powi(2);
     let ssigma2 = b.sigma.powi(2);
     Gaussian {
