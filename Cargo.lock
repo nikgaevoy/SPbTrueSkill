@@ -425,6 +425,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "overload"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "percent-encoding"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -750,6 +755,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "trueskill_spb"
 version = "0.1.0"
 dependencies = [
+ "overload 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.10.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.111 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.55 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -994,6 +1000,7 @@ dependencies = [
 "checksum openssl 0.10.29 (registry+https://github.com/rust-lang/crates.io-index)" = "cee6d85f4cb4c4f59a6a85d5b68a233d280c82e29e822913b9c8b129fbf20bdd"
 "checksum openssl-probe 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "77af24da69f9d9341038eba93a073b1fdaaa1b788221b00a69bce9e762cb32de"
 "checksum openssl-sys 0.9.58 (registry+https://github.com/rust-lang/crates.io-index)" = "a842db4709b604f0fe5d1170ae3565899be2ad3d9cbc72dedc789ac0511f78de"
+"checksum overload 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 "checksum percent-encoding 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 "checksum pin-project 0.4.20 (registry+https://github.com/rust-lang/crates.io-index)" = "e75373ff9037d112bb19bc61333a06a159eaeb217660dcfbea7d88e1db823919"
 "checksum pin-project-internal 0.4.20 (registry+https://github.com/rust-lang/crates.io-index)" = "10b4b44893d3c370407a1d6a5cfde7c41ae0478e31c516c85f67eb3adc51be6d"
