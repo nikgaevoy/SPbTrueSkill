@@ -16,9 +16,9 @@ pub struct Gaussian {
 }
 
 #[allow(unused)]
-const ZERO: Gaussian = Gaussian { mu: 0., sigma: 0. };
+pub const ZERO: Gaussian = Gaussian { mu: 0., sigma: 0. };
 #[allow(unused)]
-const ONE: Gaussian = Gaussian { mu: 0., sigma: INFINITY };
+pub const ONE: Gaussian = Gaussian { mu: 0., sigma: INFINITY };
 
 
 overload!((a: ?Gaussian) + (b: ?Gaussian) -> Gaussian {
@@ -99,6 +99,10 @@ overload!((a: &mut Gaussian) *= (b: ?Gaussian) {
 });
 
 overload!((a: ?Gaussian) / (b: ?Gaussian) -> Gaussian {
+    if b.sigma.is_infinite() {
+        return a.clone();
+    }
+
     let ssigma1 = a.sigma.powi(2);
     let ssigma2 = b.sigma.powi(2);
     Gaussian {

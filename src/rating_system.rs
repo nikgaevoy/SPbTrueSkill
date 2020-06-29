@@ -1,8 +1,12 @@
+mod nodes;
+
 use std::collections::HashMap;
 
-mod distributions;
-
-use distributions::Gaussian;
+use nodes::distributions::Gaussian;
+use nodes::{ProdNode, LeqNode, GreaterNode, SumNode, TreeNode, ValueNode, FuncNode};
+use std::cell::{RefCell};
+use std::rc::{Rc, Weak};
+use std::f64::INFINITY;
 
 // performance sigma
 const BETA: f64 = 100.;
@@ -13,18 +17,19 @@ const MU: f64 = 1500.;
 // default player sigma
 const SIGMA: f64 = MU / 3.;
 // epsilon used for convergence loop
-const CONVERGENCE_EPS: f64 = 1e-5;
+const CONVERGENCE_EPS: f64 = 2e-3;
 // defines sigma growth per second
 const SIGMA_GROWTH: f64 = 1e-5;
 
 pub type PlayerRating = Gaussian;
-type Message = Gaussian;
+type Message = nodes::Message;
 pub type Player = String;
 pub type Team = Vec<Player>;
 pub type ContestPlace = Vec<Team>;
 pub type Contest = Vec<ContestPlace>;
 pub type Rating = HashMap<Player, PlayerRating>;
 pub type RatingHistory = HashMap<Player, Vec<(PlayerRating, usize)>>;
+
 
 impl Default for PlayerRating {
     fn default() -> PlayerRating {
@@ -61,8 +66,8 @@ fn update_rating(old: &Rating, new: &mut RatingHistory, contest: &Contest, when:
 }
 
 
-fn gen_team_message<T>(places: &Vec<Vec<T>>, default: &Message) -> Vec<Vec<Message>> {
-    let mut ret = Vec::with_capacity(places.len());
+fn gen_team_message<T, K: Clone>(places: &Vec<Vec<T>>, default: &K) -> Vec<Vec<K>> {
+    let mut ret: Vec<Vec<K>> = Vec::with_capacity(places.len());
 
     for place in places {
         ret.push(vec![default.clone(); place.len()]);
@@ -72,7 +77,7 @@ fn gen_team_message<T>(places: &Vec<Vec<T>>, default: &Message) -> Vec<Vec<Messa
 }
 
 
-fn gen_player_message<T>(places: &Vec<Vec<Vec<T>>>, default: &Message) -> Vec<Vec<Vec<Message>>> {
+fn gen_player_message<T, K: Clone>(places: &Vec<Vec<Vec<T>>>, default: &K) -> Vec<Vec<Vec<K>>> {
     let mut ret = Vec::with_capacity(places.len());
 
     for place in places {
@@ -87,189 +92,158 @@ fn gen_player_message<T>(places: &Vec<Vec<Vec<T>>>, default: &Message) -> Vec<Ve
 }
 
 
-fn get_team_performance(player_performances: &Vec<Message>) -> Message {
-    let mut ret = Message { mu: 0., sigma: 0. };
+fn infer1(who: &mut Vec<impl TreeNode>) {
+    for item in who {
+        item.infer();
+    }
+}
 
-    for mess in player_performances {
-        ret += mess;
+
+fn infer2(who: &mut Vec<Vec<impl TreeNode>>) {
+    for item in who {
+        infer1(item);
+    }
+}
+
+
+fn infer3(who: &mut Vec<Vec<Vec<impl TreeNode>>>) {
+    for item in who {
+        infer2(item);
+    }
+}
+
+
+fn check_convergence(a: &Vec<Rc<RefCell<(Message, Message)>>>,
+                     b: &Vec<(Message, Message)>) -> f64 {
+    if a.len() != b.len() {
+        return INFINITY;
+    }
+
+    let mut ret = 0.;
+
+    for i in 0..a.len() {
+        ret = f64::max(ret,
+                       f64::max(
+                           f64::max(f64::abs(RefCell::borrow(&a[i]).0.mu - b[i].0.mu),
+                                    f64::abs(RefCell::borrow(&a[i]).0.sigma - b[i].0.sigma)),
+                           f64::max(f64::abs(RefCell::borrow(&a[i]).1.mu - b[i].1.mu),
+                                    f64::abs(RefCell::borrow(&a[i]).1.sigma - b[i].1.sigma)),
+                       ));
     }
 
     ret
 }
 
 
-fn propagate_results(rating: &mut Rating, contest: &Contest, m_in_t_prime: &Vec<Vec<Message>>,
-                     m_in_s: &Vec<Vec<Vec<Message>>>, m_in_p: &Vec<Vec<Vec<Message>>>) {
-    for k in 0..contest.len() {
-        for j in 0..contest[k].len() {
-            for i in 0..contest[k][j].len() {
-                let mut m_in_p_prime = m_in_t_prime[k][j].clone();
-                for i_prime in 0..contest[k][j].len() {
-                    if i_prime != i {
-                        m_in_p_prime -= &m_in_p[k][j][i_prime];
-                    }
-                }
-                let m_in_s_prime = m_in_p_prime + Message { mu: 0., sigma: BETA };
-                *rating.get_mut(&contest[k][j][i]).unwrap() = &m_in_s_prime * &m_in_s[k][j][i];
-            }
-        }
-    }
-}
-
-
-fn check_convergence(a: &Vec<Vec<Message>>, b: &Vec<Vec<Message>>) -> f64 {
-    let mut diff = 0.;
-
-    if a.len() != b.len() {
-        return f64::MAX;
-    }
-
-    for i in 0..a.len() {
-        assert_eq!(a[i].len(), b[i].len());
-
-        for j in 0..a[i].len() {
-            let dmu = (a[i][j].mu - b[i][j].mu).abs();
-            let dsigma = (a[i][j].sigma - b[i][j].sigma).abs();
-
-            diff = f64::max(diff, f64::max(dmu, dsigma));
-        }
-    }
-
-    diff
-}
-
-
 fn inference(rating: &mut Rating, contest: &Contest) {
     assert!(!contest.is_empty());
 
-    let default_message = Message { mu: 0., sigma: SIGMA };
-
     // could be optimized, written that way for simplicity
-    let mut m_in_s = gen_player_message(contest, &default_message);
-    let mut m_in_p = gen_player_message(contest, &default_message);
-    let mut m_in_t = gen_team_message(contest, &default_message);
-    let mut m_in_u = gen_team_message(contest, &default_message);
-    let mut m_out_u = gen_team_message(contest, &default_message);
-    let mut m_out_t = gen_team_message(contest, &default_message);
-    let mut m_in_l = vec![default_message.clone(); contest.len()];
-    let mut m_out_l = vec![default_message.clone(); contest.len()];
-    let mut m_l2d_l = vec![default_message.clone(); contest.len() - 1];
-    let mut m_l2d_r = vec![default_message.clone(); contest.len() - 1];
-    let mut m_in_d = vec![default_message.clone(); contest.len() - 1];
-    let mut m_out_d = vec![default_message.clone(); contest.len() - 1];
-    let mut m_d2l_l = vec![default_message.clone(); contest.len() - 1];
-    let mut m_d2l_r = vec![default_message.clone(); contest.len() - 1];
-    let mut m_l2u = gen_team_message(contest, &default_message);
-    let mut m_u2l = gen_team_message(contest, &default_message);
+    let mut s = gen_player_message(contest, &ProdNode::new());
+    let mut perf = gen_player_message(contest, &ProdNode::new());
+    let mut p = gen_player_message(contest, &ProdNode::new());
+    let mut t = gen_team_message(contest, &ProdNode::new());
+    let mut u = gen_team_message(contest, &LeqNode::new(EPS));
+    let mut l = vec![ProdNode::new(); contest.len()];
+    let mut d = vec![GreaterNode::new(2. * EPS); contest.len() - 1];
+    let mut sp = Vec::new();
+    let mut pt = Vec::new();
+    let mut tul = Vec::new();
+    let mut ld = Vec::new();
+    let mut players = Vec::new();
+    let mut conv = Vec::new();
+    let mut old_conv = Vec::new();
 
+    for i in 0..contest.len() {
+        for j in 0..contest[i].len() {
+            for k in 0..contest[i][j].len() {
+                players.push((contest[i][j][k].clone(), s[i][j][k].add_edge()));
+                RefCell::borrow_mut(&players.last().unwrap().1.upgrade().unwrap()).0 =
+                    rating.get(&players.last().unwrap().0).unwrap().clone();
 
-    // initialization
-    for k in 0..contest.len() {
-        for j in 0..contest[k].len() {
-            for i in 0..contest[k][j].len() {
-                m_in_s[k][j][i] = rating.get(&contest[k][j][i]).unwrap().clone();
-                m_in_p[k][j][i] = &m_in_s[k][j][i] + Gaussian { mu: 0., sigma: BETA };
+                let mut tmp: Vec<&mut dyn ValueNode> = Vec::with_capacity(3);
+                tmp.push(&mut p[i][j][k]);
+                tmp.push(&mut s[i][j][k]);
+                tmp.push(&mut perf[i][j][k]);
+                sp.push(SumNode::new(&mut tmp));
+                RefCell::borrow_mut(perf[i][j][k].last_mut().unwrap()).1 = Gaussian { mu: 0., sigma: BETA };
             }
 
-            m_in_t[k][j] = get_team_performance(&m_in_p[k][j]);
-            m_in_u[k][j] = Message { mu: 0., sigma: m_in_t[k][j].sigma };
-            m_out_u[k][j] = m_in_u[k][j].leq_eps(EPS);
-            m_out_t[k][j] = &m_out_u[k][j] + &m_in_t[k][j]; // seems to be a bug in the article
+            let mut tt: Vec<&mut dyn ValueNode> = vec![&mut t[i][j]];
+            for pp in &mut p[i][j] {
+                tt.push(pp);
+            }
+            pt.push(SumNode::new(&mut tt));
+            let mut tmp: Vec<&mut dyn ValueNode> = Vec::with_capacity(3);
+            tmp.push(&mut l[i]);
+            tmp.push(&mut t[i][j]);
+            tmp.push(&mut u[i][j]);
+            tul.push(SumNode::new(&mut tmp));
+            conv.push(t[i][j].last_mut().unwrap().clone());
         }
 
-        assert!(!m_out_t[k].is_empty());
-        assert!(!m_out_u[k].is_empty());
-
-        m_in_l[k] = &m_out_t[k][0] - &m_out_u[k][0];
-
-        for j in 1..contest[k].len() {
-            m_in_l[k] *= &m_out_t[k][j] - &m_out_u[k][j];
+        if i != 0 {
+            let mut tmp: Vec<&mut dyn ValueNode> = Vec::with_capacity(3);
+            let (a, b) = l.split_at_mut(i);
+            tmp.push(a.last_mut().unwrap());
+            tmp.push(b.first_mut().unwrap());
+            tmp.push(&mut d[i - 1]);
+            ld.push(SumNode::new(&mut tmp));
         }
     }
 
-    // approximate inference
-    for k in 0..m_l2d_l.len() {
-        m_l2d_l[k] = m_in_l[k].clone();
-        m_l2d_r[k] = m_in_l[k + 1].clone();
-    }
+    infer3(&mut s);
+    infer1(&mut sp);
+    infer3(&mut p);
+    infer1(&mut pt);
+    infer2(&mut t);
+    infer1(&mut tul);
+    infer2(&mut u);
+    infer1(&mut tul);
 
-    let mut tmp_m_l2u = Vec::new();
-    let mut tmp_m_out_u = Vec::new();
     let mut rounds = 0;
 
-    while f64::max(check_convergence(&tmp_m_l2u, &m_l2u),
-                   check_convergence(&tmp_m_out_u, &m_out_u)) >= CONVERGENCE_EPS {
-        if rounds % 2 == 0 {
-            tmp_m_l2u = m_l2u.clone();
-            tmp_m_out_u = m_out_u.clone();
+    while check_convergence(&conv, &old_conv) >= CONVERGENCE_EPS {
+        old_conv.clear();
+        for item in &conv {
+            old_conv.push(RefCell::borrow(item).clone());
         }
         rounds += 1;
 
-        for k in 0..m_l2d_l.len() {
-            m_in_d[k] = &m_l2d_l[k] - &m_l2d_r[k];
-            m_out_d[k] = m_in_d[k].greater_eps(2. * EPS);
-            let tmp = m_d2l_l[k].clone();
-            m_d2l_l[k] = &m_out_d[k] + &m_l2d_r[k];
-            m_d2l_r[k] = tmp - &m_out_d[k];
-        }
-
-        for k in 0..m_l2u.len() {
-            for j in 0..m_l2u[k].len() {
-                if k == 0 {
-                    m_l2u[k][j] = m_d2l_l[k].clone();
-                } else if k == m_l2u.len() - 1 {
-                    m_l2u[k][j] = m_d2l_r[k - 1].clone();
-                } else {
-                    m_l2u[k][j] = &m_d2l_l[k] * &m_d2l_r[k - 1];
-                }
-
-                for i in 0..m_l2u[k].len() {
-                    if i != j {
-                        m_l2u[k][j] *= &m_u2l[k][i];
-                    }
-                }
-
-                m_in_u[k][j] = &m_in_l[k] - &m_out_t[k][j];
-                m_out_u[k][j] = m_in_u[k][j].leq_eps(EPS);
-                m_u2l[k][j] = &m_out_t[k][j] - &m_out_u[k][j];
-            }
-
-            m_out_l[k] = m_u2l[k][0].clone();
-
-            for j in 1..m_u2l[k].len() {
-                m_out_l[k] *= &m_u2l[k][j];
-            }
-        }
-
-        m_l2d_l[0] = m_out_l[0].clone();
-        for k in 1..m_l2d_l.len() {
-            let tmp = m_l2d_r[k - 1].clone();
-            m_l2d_r[k - 1] = &m_out_l[k] * &m_d2l_l[k];
-            m_l2d_l[k] = &m_out_l[k] * tmp;
-        }
-        *m_l2d_r.last_mut().unwrap() = m_out_l.last().unwrap().clone();
+        infer1(&mut l);
+        infer1(&mut ld);
+        infer1(&mut d);
+        infer1(&mut ld);
+        infer1(&mut l);
+        infer1(&mut tul);
+        infer2(&mut u);
+        infer1(&mut tul);
     }
 
     eprintln!("Rounds until convergence: {}", rounds);
 
-    for k in 0..m_in_t.len() {
-        for j in 0..m_in_t[k].len() {
-            m_in_t[k][j] = &m_l2u[k][j] - &m_out_u[k][j];
-        }
-    }
+    infer2(&mut t);
+    infer1(&mut pt);
+    infer3(&mut p);
+    infer1(&mut sp);
+    infer3(&mut s);
 
-    // propagating the results
-    propagate_results(rating, contest, &m_in_t, &m_in_s, &m_in_p);
+    for (name, mess) in &players {
+        *rating.get_mut(name).unwrap() = RefCell::borrow(&Weak::upgrade(mess).unwrap()).1.clone();
+    }
 }
 
 
 pub fn simulate_contest(rating_history: &mut RatingHistory, contest: &Contest, when: usize) {
+    let mut clamped = contest.clone();
+    clamped.pop();
+
     let mut contest_rating = Rating::new();
-    load_rating(rating_history, &mut contest_rating, contest, when);
+    load_rating(rating_history, &mut contest_rating, &clamped, when);
 
     if contest.len() >= 2 {
-        inference(&mut contest_rating, contest);
+        inference(&mut contest_rating, &clamped);
     }
 
-    update_rating(&contest_rating, rating_history, contest, when);
+    update_rating(&contest_rating, rating_history, &clamped, when);
 }
