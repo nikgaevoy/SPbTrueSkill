@@ -7,7 +7,7 @@ use statrs::function::erf::erfc;
 use std::f64::consts::PI;
 use std::f64::INFINITY;
 
-const PREC: f64 = 1e-3;
+const PREC: f64 = 1e-4;
 
 #[derive(Clone, Debug)]
 pub struct Gaussian {

@@ -9,7 +9,7 @@ use std::rc::{Rc, Weak};
 use std::f64::INFINITY;
 
 // performance sigma
-const BETA: f64 = 100.;
+const BETA: f64 = 200.;
 // epsilon used for ties
 const EPS: f64 = 0.736;
 // default player rating
@@ -17,7 +17,7 @@ const MU: f64 = 1500.;
 // default player sigma
 const SIGMA: f64 = MU / 3.;
 // epsilon used for convergence loop
-const CONVERGENCE_EPS: f64 = 2e-3;
+const CONVERGENCE_EPS: f64 = 2e-4;
 // defines sigma growth per second
 const SIGMA_GROWTH: f64 = 1e-5;
 
@@ -135,8 +135,24 @@ fn check_convergence(a: &Vec<Rc<RefCell<(Message, Message)>>>,
 }
 
 
+fn infer_ld(ld: &mut Vec<impl TreeNode>, l: &mut Vec<impl TreeNode>) {
+    for i in 0..ld.len() {
+        l[i].infer();
+        ld[i].infer();
+    }
+    l.last_mut().unwrap().infer();
+    for i in 0..ld.len() {
+        let i = ld.len() - 1 - i;
+        ld[i].infer();
+        l[i].infer();
+    }
+}
+
+
 fn inference(rating: &mut Rating, contest: &Contest) {
-    assert!(!contest.is_empty());
+    if contest.is_empty() {
+        return;
+    }
 
     // could be optimized, written that way for simplicity
     let mut s = gen_player_message(contest, &ProdNode::new());
@@ -210,11 +226,9 @@ fn inference(rating: &mut Rating, contest: &Contest) {
         }
         rounds += 1;
 
-        infer1(&mut l);
-        infer1(&mut ld);
+        infer_ld(&mut ld, &mut l);
         infer1(&mut d);
-        infer1(&mut ld);
-        infer1(&mut l);
+        infer_ld(&mut ld, &mut l);
         infer1(&mut tul);
         infer2(&mut u);
         infer1(&mut tul);
@@ -235,15 +249,10 @@ fn inference(rating: &mut Rating, contest: &Contest) {
 
 
 pub fn simulate_contest(rating_history: &mut RatingHistory, contest: &Contest, when: usize) {
-    let mut clamped = contest.clone();
-    clamped.pop();
-
     let mut contest_rating = Rating::new();
-    load_rating(rating_history, &mut contest_rating, &clamped, when);
+    load_rating(rating_history, &mut contest_rating, &contest, when);
 
-    if contest.len() >= 2 {
-        inference(&mut contest_rating, &clamped);
-    }
+    inference(&mut contest_rating, &contest);
 
-    update_rating(&contest_rating, rating_history, &clamped, when);
+    update_rating(&contest_rating, rating_history, &contest, when);
 }

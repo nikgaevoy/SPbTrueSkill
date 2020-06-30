@@ -29,11 +29,7 @@ fn contest_adaptor(from: &EbTechContest) -> (Contest, usize) {
 }
 
 
-fn main() {
-    let mut rating = rating_system::RatingHistory::new();
-
-    let now = time::Instant::now();
-
+fn simulate_stored_contests(rating: &mut rating_system::RatingHistory) {
     for contest_id in get_contest_ids() {
         let contest: EbTechContest = get_contest("cache", contest_id);
         println!(
@@ -43,16 +39,18 @@ fn main() {
             contest.name
         );
         let adapted = contest_adaptor(&contest);
-        simulate_contest(&mut rating, &adapted.0, adapted.1);
+        simulate_contest(rating, &adapted.0, adapted.1);
     }
+}
 
+
+fn write_results(rating: &rating_system::RatingHistory, filename: &str) {
     use std::io::Write;
-    let filename = "data/CFratings.txt";
     let file = std::fs::File::create(filename).expect("Output file not found");
     let mut out = std::io::BufWriter::new(file);
     let mut to_sort = Vec::new();
 
-    for (key, value) in &rating {
+    for (key, value) in rating {
         to_sort.push((key.clone(), value.clone()));
     }
 
@@ -69,6 +67,17 @@ fn main() {
         }
         writeln!(out).ok();
     }
+}
+
+
+fn main() {
+    let mut rating = rating_system::RatingHistory::new();
+
+    let now = time::Instant::now();
+
+    simulate_stored_contests(&mut rating);
+
+    write_results(&mut rating, "data/CFratings.txt");
 
     println!("Finished in {:.2} seconds", now.elapsed().as_secs_f64());
 }
