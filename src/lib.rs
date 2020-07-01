@@ -19,7 +19,7 @@ const SIGMA: f64 = MU / 3.;
 // epsilon used for convergence loop
 const CONVERGENCE_EPS: f64 = 2e-4;
 // defines sigma growth per second
-const SIGMA_GROWTH: f64 = 1e5;
+const SIGMA_GROWTH: f64 = 1e-5;
 
 pub type PlayerRating = Gaussian;
 type Message = nodes::Message;
@@ -177,7 +177,7 @@ fn inference(rating: &mut Rating, contest: &Contest) {
                 tmp.push(&mut s[i][j][k]);
                 tmp.push(&mut perf[i][j][k]);
                 sp.push(SumNode::new(&mut tmp));
-                RefCell::borrow_mut(perf[i][j][k].last_mut().unwrap()).1 = Gaussian { mu: 0., sigma: BETA };
+                RefCell::borrow_mut(perf[i][j][k].get_edges_mut().last_mut().unwrap()).1 = Gaussian { mu: 0., sigma: BETA };
             }
 
             let mut tt: Vec<&mut dyn ValueNode> = vec![&mut t[i][j]];
@@ -190,7 +190,7 @@ fn inference(rating: &mut Rating, contest: &Contest) {
             tmp.push(&mut t[i][j]);
             tmp.push(&mut u[i][j]);
             tul.push(SumNode::new(&mut tmp));
-            conv.push(t[i][j].last_mut().unwrap().clone());
+            conv.push(t[i][j].get_edges().last().unwrap().clone());
         }
 
         if i != 0 {

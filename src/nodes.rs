@@ -1,4 +1,5 @@
 extern crate distributions;
+
 use distributions::Gaussian;
 use distributions::{ZERO, ONE};
 use std::rc::{Rc, Weak};
@@ -69,8 +70,12 @@ impl ValueNode for ProdNode {
 }
 
 impl ProdNode {
-    pub fn last_mut(&mut self) -> Option<&mut Rc<RefCell<(Message, Message)>>> {
-        self.edges.last_mut()
+    pub fn get_edges_mut(&mut self) -> &mut Vec<Rc<RefCell<(Message, Message)>>> {
+        &mut self.edges
+    }
+
+    pub fn get_edges(&mut self) -> &Vec<Rc<RefCell<(Message, Message)>>> {
+        &self.edges
     }
 
     pub fn new() -> Self {
