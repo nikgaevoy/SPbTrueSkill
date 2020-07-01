@@ -1,5 +1,4 @@
-pub mod distributions;
-
+extern crate distributions;
 use distributions::Gaussian;
 use distributions::{ZERO, ONE};
 use std::rc::{Rc, Weak};

@@ -2,7 +2,7 @@ mod nodes;
 
 use std::collections::HashMap;
 
-use nodes::distributions::Gaussian;
+use distributions::Gaussian;
 use nodes::{ProdNode, LeqNode, GreaterNode, SumNode, TreeNode, ValueNode, FuncNode};
 use std::cell::{RefCell};
 use std::rc::{Rc, Weak};
@@ -30,21 +30,16 @@ pub type Contest = Vec<ContestPlace>;
 pub type Rating = HashMap<Player, PlayerRating>;
 pub type RatingHistory = HashMap<Player, Vec<(PlayerRating, usize)>>;
 
-
-impl Default for PlayerRating {
-    fn default() -> PlayerRating {
-        PlayerRating {
-            mu: MU,
-            sigma: SIGMA,
-        }
-    }
-}
+const DEFAULT_PLAYER_RATING: PlayerRating = PlayerRating {
+    mu: MU,
+    sigma: SIGMA,
+};
 
 fn load_rating(old: &RatingHistory, new: &mut Rating, contest: &Contest, when: usize) {
     for place in &contest[..] {
         for team in &place[..] {
             for player in &team[..] {
-                let curr = old.get(player).cloned().unwrap_or(vec![(PlayerRating::default(), when)]);
+                let curr = old.get(player).cloned().unwrap_or(vec![(DEFAULT_PLAYER_RATING, when)]);
                 let mut add = curr.last().unwrap().clone();
                 assert!(add.1 <= when);
                 add.0.sigma = f64::min(SIGMA, add.0.sigma + (when - add.1) as f64 * SIGMA_GROWTH);

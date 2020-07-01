@@ -1,7 +1,4 @@
-mod read_codeforces;
-mod rating_system;
-
-use rating_system::{Contest, simulate_contest};
+use trueskill_spb::{Contest, simulate_contest};
 use read_codeforces::{get_contest, get_contest_ids};
 use read_codeforces::Contest as EbTechContest;
 use std::time;
@@ -29,7 +26,7 @@ fn contest_adaptor(from: &EbTechContest) -> (Contest, usize) {
 }
 
 
-fn simulate_stored_contests(rating: &mut rating_system::RatingHistory) {
+fn simulate_stored_contests(rating: &mut trueskill_spb::RatingHistory) {
     for contest_id in get_contest_ids() {
         let contest: EbTechContest = get_contest("cache", contest_id);
         println!(
@@ -44,7 +41,7 @@ fn simulate_stored_contests(rating: &mut rating_system::RatingHistory) {
 }
 
 
-fn write_results(rating: &rating_system::RatingHistory, filename: &str, history_size: usize) {
+fn write_results(rating: &trueskill_spb::RatingHistory, filename: &str, history_size: usize) {
     use std::io::Write;
     let file = std::fs::File::create(filename).expect("Output file not found");
     let mut out = std::io::BufWriter::new(file);
@@ -71,7 +68,7 @@ fn write_results(rating: &rating_system::RatingHistory, filename: &str, history_
 
 
 fn main() {
-    let mut rating = rating_system::RatingHistory::new();
+    let mut rating = trueskill_spb::RatingHistory::new();
 
     let now = time::Instant::now();
 

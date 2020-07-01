@@ -50,6 +50,14 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "distributions"
+version = "0.1.0"
+dependencies = [
+ "overload 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "statrs 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "dtoa"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -526,6 +534,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "read_codeforces"
+version = "0.1.0"
+dependencies = [
+ "reqwest 0.10.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.111 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.55 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -755,11 +772,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "trueskill_spb"
 version = "0.1.0"
 dependencies = [
- "overload 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "reqwest 0.10.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.111 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.55 (registry+https://github.com/rust-lang/crates.io-index)",
- "statrs 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "distributions 0.1.0",
+ "read_codeforces 0.1.0",
 ]
 
 [[package]]
