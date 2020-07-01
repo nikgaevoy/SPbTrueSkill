@@ -19,7 +19,7 @@ const SIGMA: f64 = MU / 3.;
 // epsilon used for convergence loop
 const CONVERGENCE_EPS: f64 = 2e-4;
 // defines sigma growth per second
-const SIGMA_GROWTH: f64 = 1e-5;
+const SIGMA_GROWTH: f64 = 1e5;
 
 pub type PlayerRating = Gaussian;
 type Message = nodes::Message;
@@ -228,7 +228,8 @@ fn inference(rating: &mut Rating, contest: &Contest) {
 
         infer_ld(&mut ld, &mut l);
         infer1(&mut d);
-        infer_ld(&mut ld, &mut l);
+        infer1(&mut ld);
+        infer1(&mut l);
         infer1(&mut tul);
         infer2(&mut u);
         infer1(&mut tul);
@@ -243,7 +244,13 @@ fn inference(rating: &mut Rating, contest: &Contest) {
     infer3(&mut s);
 
     for (name, mess) in &players {
-        *rating.get_mut(name).unwrap() = RefCell::borrow(&Weak::upgrade(mess).unwrap()).1.clone();
+        let prior;
+        let performance;
+
+        prior = RefCell::borrow(&Weak::upgrade(mess).unwrap()).0.clone();
+        performance = RefCell::borrow(&Weak::upgrade(mess).unwrap()).1.clone();
+
+        *rating.get_mut(name).unwrap() = prior * performance;
     }
 }
 

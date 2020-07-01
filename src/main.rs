@@ -44,7 +44,7 @@ fn simulate_stored_contests(rating: &mut rating_system::RatingHistory) {
 }
 
 
-fn write_results(rating: &rating_system::RatingHistory, filename: &str) {
+fn write_results(rating: &rating_system::RatingHistory, filename: &str, history_size: usize) {
     use std::io::Write;
     let file = std::fs::File::create(filename).expect("Output file not found");
     let mut out = std::io::BufWriter::new(file);
@@ -62,7 +62,7 @@ fn write_results(rating: &rating_system::RatingHistory, filename: &str) {
     for (key, value) in to_sort {
         write!(out, "{}.\t{:30}", ord, key).ok();
         ord += 1;
-        for (rating, _when) in &value[value.len() - 1..value.len()] {
+        for (rating, _when) in &value[value.len() - usize::min(history_size, value.len())..value.len()] {
             write!(out, "\t({:.2}, {:.2})", rating.mu, rating.sigma).ok();
         }
         writeln!(out).ok();
@@ -77,7 +77,17 @@ fn main() {
 
     simulate_stored_contests(&mut rating);
 
-    write_results(&mut rating, "data/CFratings.txt");
+    write_results(&rating, "data/CFratings.txt", 1);
+    write_results(&rating, "data/CFratings_10.txt", 10);
+    write_results(&rating, "data/CFratings_full.txt", usize::MAX);
+
+    let mut sum = 0.;
+
+    for (_key, val) in &rating {
+        sum += val.last().unwrap().0.mu;
+    }
+
+    println!("Avg. rating: {}", sum / (rating.len() as f64));
 
     println!("Finished in {:.2} seconds", now.elapsed().as_secs_f64());
 }
