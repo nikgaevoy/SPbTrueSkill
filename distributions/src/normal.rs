@@ -151,7 +151,11 @@ impl Gaussian {
 
         assert!(!mu.is_nan() && !sigma.is_nan(), "{:?}\teps {}", self, eps);
 
-        Gaussian { mu, sigma } / self
+        let ans = Gaussian { mu, sigma } / self;
+
+        assert!(ans.mu.abs() <= eps);
+
+        ans
     }
 
 
@@ -170,7 +174,11 @@ impl Gaussian {
 
         assert!(!mu.is_nan() && !sigma.is_nan(), "{:?}\teps {}", self, eps);
 
-        Gaussian { mu, sigma } / self
+        let ans = Gaussian { mu, sigma } / self;
+
+        assert!(ans.mu >= 2. * eps);
+
+        ans
     }
 }
 

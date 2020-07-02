@@ -1,3 +1,7 @@
+#[cfg(test)]
+#[macro_use]
+extern crate float_cmp;
+
 mod nodes;
 
 use std::collections::HashMap;
@@ -257,4 +261,51 @@ pub fn simulate_contest(rating_history: &mut RatingHistory, contest: &Contest, w
     inference(&mut contest_rating, &contest);
 
     update_rating(&contest_rating, rating_history, &contest, when);
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn monotonicity() {
+        fn one_contest(mid: usize) {
+            let mut rating = RatingHistory::new();
+
+            let mut contest = Contest::new();
+
+            for i in 0..(2 * mid + 1) {
+                contest.push(vec![vec![i.to_string()]]);
+            }
+
+            simulate_contest(&mut rating, &contest, 0);
+
+            let mut to_sort = Vec::new();
+
+            for (player, posterior) in &rating {
+                to_sort.push((player.parse::<i32>().unwrap(), posterior.last().unwrap().0.clone()));
+            }
+
+            to_sort.sort_by(|(ak, _av), (bk, _bv)| ak.cmp(bk));
+            let to_sort = to_sort;
+
+            assert!(approx_eq!(f64, to_sort[mid].1.mu, MU, epsilon = 2. * CONVERGENCE_EPS),
+                    "Strange mid element: {}", &to_sort[mid].1.mu);
+            for i in 1..to_sort.len() {
+                assert!(to_sort[i - 1].1.mu > to_sort[i].1.mu - CONVERGENCE_EPS,
+                        "Fail at i = {}: {} <= {}", i, to_sort[i - 1].1.mu, to_sort[i].1.mu);
+            }
+        }
+
+        let mut to_check = vec![100usize, 1000];
+
+        for i in 1..10 {
+            to_check.push(i as usize);
+        }
+
+        for mid in &to_check {
+            one_contest(*mid);
+        }
+    }
 }

@@ -14,3 +14,6 @@ members = [
 [dependencies]
 distributions = { path = "distributions" }
 read_codeforces = { path = "read_codeforces" }
+
+[dev-dependencies]
+float-cmp = "0.8.0"

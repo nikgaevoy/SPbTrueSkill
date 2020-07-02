@@ -791,6 +791,7 @@ name = "trueskill_spb"
 version = "0.1.0"
 dependencies = [
  "distributions 0.1.0",
+ "float-cmp 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "read_codeforces 0.1.0",
 ]
 
