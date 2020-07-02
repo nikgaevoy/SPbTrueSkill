@@ -44,20 +44,24 @@ pub struct SumNode {
 
 impl TreeNode for ProdNode {
     fn infer(&mut self) {
-        let mut prod = ONE;
+        fn get_prefix_prods(from: &[Rc<RefCell<(Message, Message)>>]) -> Vec<Message> {
+            let mut prefix_prods = vec![ONE; from.len() + 1];
 
-        for rc in &self.edges[..] {
-            prod *= &RefCell::borrow(rc).0;
-        }
-
-        let prod = prod;
-
-        for rc in &mut self.edges[..] {
-            let ans;
-            {
-                ans = &prod / &RefCell::borrow(rc).0;
+            for i in 1..prefix_prods.len() {
+                prefix_prods[i] = &prefix_prods[i - 1] * &RefCell::borrow(&&from[i - 1]).0;
             }
-            RefCell::borrow_mut(rc).1 = ans;
+
+            prefix_prods
+        }
+        let prefix_prods = get_prefix_prods(self.edges.as_slice());
+        self.edges.reverse();
+        let mut suffix_prods = get_prefix_prods(self.edges.as_slice());
+        self.edges.reverse();
+        suffix_prods.reverse();
+        let suffix_prods = suffix_prods;
+
+        for i in 0..self.edges.len() {
+            RefCell::borrow_mut(&self.edges[i]).1 = &prefix_prods[i] * &suffix_prods[i + 1];
         }
     }
 }

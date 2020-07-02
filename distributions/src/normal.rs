@@ -149,10 +149,7 @@ impl Gaussian {
         let sigma2 = 1. / alpha * (moment2(self.mu, self.sigma, -eps) - moment2(self.mu, self.sigma, eps)) - mu.powi(2);
         let sigma = sigma2.sqrt();
 
-        if !(!mu.is_nan() && !sigma.is_nan()) {
-            println!("{:?}\teps {}", self, eps);
-            panic!();
-        }
+        assert!(!mu.is_nan() && !sigma.is_nan(), "{:?}\teps {}", self, eps);
 
         Gaussian { mu, sigma } / self
     }
@@ -171,10 +168,7 @@ impl Gaussian {
         let sigma2 = 1. / alpha * moment2(self.mu, self.sigma, eps) - mu.powi(2);
         let sigma = sigma2.sqrt();
 
-        if !(!mu.is_nan() && !sigma.is_nan()) {
-            println!("{:?}\teps {}", self, eps);
-            panic!();
-        }
+        assert!(!mu.is_nan() && !sigma.is_nan(), "{:?}\teps {}", self, eps);
 
         Gaussian { mu, sigma } / self
     }
