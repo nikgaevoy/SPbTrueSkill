@@ -1,7 +1,7 @@
 extern crate distributions;
 
-use distributions::Gaussian;
-use distributions::{ZERO, ONE};
+use distributions::normal::Gaussian;
+use distributions::normal::{ZERO, ONE};
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 
@@ -74,7 +74,7 @@ impl ProdNode {
         &mut self.edges
     }
 
-    pub fn get_edges(&mut self) -> &Vec<Rc<RefCell<(Message, Message)>>> {
+    pub fn get_edges(&self) -> &Vec<Rc<RefCell<(Message, Message)>>> {
         &self.edges
     }
 

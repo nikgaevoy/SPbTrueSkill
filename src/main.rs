@@ -74,9 +74,24 @@ fn main() {
 
     simulate_stored_contests(&mut rating);
 
+    let rating = rating;
+    let mut actual_rating = trueskill_spb::RatingHistory::new();
+
+    for (key, value) in &rating {
+        if value.last().unwrap().1 >= 1578148500 &&  // "Hello 2020"
+            value.len() >= 10 {
+            actual_rating.insert(key.clone(), value.clone());
+        }
+    }
+
+    let actual_rating = actual_rating;
+
     write_results(&rating, "data/CFratings.txt", 1);
     write_results(&rating, "data/CFratings_10.txt", 10);
     write_results(&rating, "data/CFratings_full.txt", usize::MAX);
+    write_results(&actual_rating, "data/CFratings_actual.txt", 1);
+    write_results(&actual_rating, "data/CFratings_10_actual.txt", 10);
+    write_results(&actual_rating, "data/CFratings_full_actual.txt", usize::MAX);
 
     let mut sum = 0.;
 

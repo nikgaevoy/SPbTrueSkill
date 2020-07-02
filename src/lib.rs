@@ -2,7 +2,7 @@ mod nodes;
 
 use std::collections::HashMap;
 
-use distributions::Gaussian;
+use distributions::normal::Gaussian;
 use nodes::{ProdNode, LeqNode, GreaterNode, SumNode, TreeNode, ValueNode, FuncNode};
 use std::cell::{RefCell};
 use std::rc::{Rc, Weak};
