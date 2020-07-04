@@ -19,11 +19,11 @@ const EPS: f64 = 0.736;
 // default player rating
 const MU: f64 = 1500.;
 // default player sigma
-const SIGMA: f64 = MU / 3.;
+const SIGMA: f64 = 350.;
 // epsilon used for convergence loop
 const CONVERGENCE_EPS: f64 = 2e-4;
 // defines sigma growth per second
-const SIGMA_GROWTH: f64 = 1e-5;
+const SIGMA_GROWTH: f64 = 0.05;
 
 pub type PlayerRating = Gaussian;
 type Message = nodes::Message;
@@ -46,7 +46,8 @@ fn load_rating(old: &RatingHistory, new: &mut Rating, contest: &Contest, when: u
                 let curr = old.get(player).cloned().unwrap_or(vec![(DEFAULT_PLAYER_RATING, when)]);
                 let mut add = curr.last().unwrap().clone();
                 assert!(add.1 <= when);
-                add.0.sigma = f64::min(SIGMA, add.0.sigma + (when - add.1) as f64 * SIGMA_GROWTH);
+                add.0.sigma = f64::min(SIGMA, (add.0.sigma.powi(2) +
+                    (when - add.1) as f64 * SIGMA_GROWTH.powi(2)).sqrt());
                 new.insert(player.to_string(), add.0);
             }
         }
@@ -112,6 +113,20 @@ fn infer3(who: &mut Vec<Vec<Vec<impl TreeNode>>>) {
 }
 
 
+fn infer_ld(ld: &mut Vec<impl TreeNode>, l: &mut Vec<impl TreeNode>) {
+    for i in 0..ld.len() {
+        l[i].infer();
+        ld[i].infer();
+    }
+    l.last_mut().unwrap().infer();
+    for j in 0..ld.len() {
+        let i = ld.len() - 1 - j;
+        ld[i].infer();
+        l[i].infer();
+    }
+}
+
+
 fn check_convergence(a: &Vec<Rc<RefCell<(Message, Message)>>>,
                      b: &Vec<(Message, Message)>) -> f64 {
     if a.len() != b.len() {
@@ -131,20 +146,6 @@ fn check_convergence(a: &Vec<Rc<RefCell<(Message, Message)>>>,
     }
 
     ret
-}
-
-
-fn infer_ld(ld: &mut Vec<impl TreeNode>, l: &mut Vec<impl TreeNode>) {
-    for i in 0..ld.len() {
-        l[i].infer();
-        ld[i].infer();
-    }
-    l.last_mut().unwrap().infer();
-    for i in 0..ld.len() {
-        let i = ld.len() - 1 - i;
-        ld[i].infer();
-        l[i].infer();
-    }
 }
 
 
@@ -227,8 +228,7 @@ fn inference(rating: &mut Rating, contest: &Contest) {
 
         infer_ld(&mut ld, &mut l);
         infer1(&mut d);
-        infer1(&mut ld);
-        infer1(&mut l);
+        infer_ld(&mut ld, &mut l);
         infer1(&mut tul);
         infer2(&mut u);
         infer1(&mut tul);
