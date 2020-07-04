@@ -76,5 +76,6 @@ fabric.properties
 # Project-specific
 /cache
 
-# Large and not ready
+# Large
 /data/CFratings*.txt
+!/data/CFratings_actual.txt

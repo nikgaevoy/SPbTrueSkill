@@ -19,11 +19,11 @@ const EPS: f64 = 0.736;
 // default player rating
 const MU: f64 = 1500.;
 // default player sigma
-const SIGMA: f64 = 350.;
+const SIGMA: f64 = MU / 3.;
 // epsilon used for convergence loop
 const CONVERGENCE_EPS: f64 = 2e-4;
 // defines sigma growth per second
-const SIGMA_GROWTH: f64 = 0.05;
+const SIGMA_GROWTH: f64 = 0.01;
 
 pub type PlayerRating = Gaussian;
 type Message = nodes::Message;
