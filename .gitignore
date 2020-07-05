@@ -74,7 +74,8 @@ fabric.properties
 /target
 
 # Project-specific
-/cache
+/cache/*
+!/cache/0.json
 
 # Large
 /data/CFratings*.txt
